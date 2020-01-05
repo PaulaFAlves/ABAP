@@ -1,0 +1,47 @@
+TYPES: BEGIN OF ty_selecao,
+         bukrs TYPE bkpf-bukrs,
+         belnr TYPE bkpf-belnr,
+         gjahr TYPE bkpf-gjahr,
+         buzei TYPE bseg-buzei,
+       END OF ty_selecao.
+
+DATA: gt_bkpf TYPE TABLE OF ty_selecao,
+      gs_bkpf TYPE ty_selecao,
+      gt_bseg TYPE TABLE OF ty_selecao,
+      gs_bseg TYPE ty_selecao,
+      gt_result TYPE TABLE OF ty_selecao,
+      gs_result TYPE ty_selecao.
+
+           SELECT  bukrs belnr gjahr
+   UP TO 500 ROWS
+             FROM  bkpf
+       INTO TABLE  gt_bkpf.
+CHECK sy-subrc = 0.
+
+
+            SELECT  bukrs, belnr, gjahr, buzei
+              FROM  bseg
+        INTO TABLE  @gt_bseg
+FOR ALL ENTRIES IN  @gt_bkpf
+WHERE       bukrs = @gt_bkpf-bukrs
+AND         belnr = @gt_bkpf-belnr
+AND         gjahr = @gt_bkpf-gjahr.
+
+SORT: gt_bkpf BY bukrs belnr gjahr,
+      gt_bseg BY bukrs belnr gjahr buzei.
+
+LOOP AT gt_bseg INTO gs_bseg.
+  READ TABLE gt_bkpf
+        INTO gs_bkpf
+    WITH KEY bukrs  = gs_bseg-bukrs
+             belnr  = gs_bseg-belnr
+             gjahr  = gs_bseg-gjahr
+             BINARY SEARCH.
+    CHECK sy-subrc = 0.
+    IF gs_bseg-buzei = 1 and gs_bseg-gjahr = 2019.
+       WRITE:   gs_bseg-bukrs,
+                gs_bseg-belnr,
+                gs_bseg-gjahr,
+              / gs_bseg-buzei.
+    ENDIF.
+ENDLOOP.
